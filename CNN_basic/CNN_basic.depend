@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1611616639 source:c:\users\parker\desktop\night vision\cnn_basic\main.c
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdbool.h>
+	<math.h>
+	<float.h>
+	<time.h>
+	"main.h"
+
+1611616542 c:\users\parker\desktop\night vision\cnn_basic\main.h
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdbool.h>
+	<math.h>
+	<float.h>
+
