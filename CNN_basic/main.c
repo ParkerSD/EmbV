@@ -8,6 +8,7 @@
 #include <float.h>
 #include <time.h>
 #include "main.h"
+#include "mnist.h"
 
 //#define DEBUG
 #define TEST
@@ -30,7 +31,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
         case e_layer_input:
             for(int i=0; i<PIXEL_COUNT; i++)
             {
-                if(b->in->mat[i] > 0) // relu, was !=0, only for active neurons
+                if(b->in->mat[i] > ACTIVE_THRESH) // relu, was !=0, only for active neurons
                     temp += b->in->mat[i] * Wij[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_L0[n_num]; //one bias per neuron
@@ -43,7 +44,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
         case e_layer_zero:
             for(int i=0; i<LAYER0_SIZE; i++)
             {
-                if(b->L0->n[i] > 0) // relu, was !=0, only for active neurons
+                if(b->L0->n[i] > ACTIVE_THRESH) // relu, was !=0, only for active neurons
                     temp += b->L0->n[i] * Wjk[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_L1[n_num]; //one bias per neuron
@@ -56,7 +57,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
         case e_layer_one:
             for(int i=0; i<LAYER1_SIZE; i++)
             {
-                if(b->L1->n[i] > 0) // was !=0, only for active neurons
+                if(b->L1->n[i] > ACTIVE_THRESH) // was !=0, only for active neurons
                     temp += b->L1->n[i] * Wkl[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_out[n_num]; //outputs, no activation function
@@ -278,6 +279,16 @@ brain* test(brain* b, int t)
 
 int main(void)
 {
+    //MASTER TODO
+        //fixed point (int) implementation
+        //implement death and regeneration of neurons. This should help with overfitting
+
+    //NOTES
+        //the CNN seems to have moving 'blind spots' depending on the quantity of neurons in the hidden layers
+        //some output values take longer to converge to
+        //do the neurons need local input and output values? now each neuron holds a single float value
+
+    //CNN Processes
         //optionally import model execution or dataset for training
         //initialize weights, biases
         //initialize brain
@@ -286,7 +297,7 @@ int main(void)
         //calc softmax outputs
         //compare to desired output
         //backprop
-        //kill some neurons (biosim), should help overfitting
+        //kill and regen some neurons
         //export model when finished
 
     #ifdef DEBUG
@@ -308,11 +319,9 @@ int main(void)
     while(1)
     {
         #ifdef TEST
-        for(int x=0; x<NUM_OUTPUTS; x++)
-        {
-            init_weights();
-            mind = test(mind, x);
-        }
+        //init_weights(); // optional weight reset
+        int test_output = 0;
+        mind = test(mind, test_output);
         #endif // test
 
         #ifndef TEST

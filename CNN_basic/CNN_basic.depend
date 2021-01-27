@@ -17,3 +17,29 @@
 	<math.h>
 	<float.h>
 
+1611716477 source:c:\users\parker\documents\github\embv\cnn_basic\main.c
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdbool.h>
+	<math.h>
+	<float.h>
+	<time.h>
+	"main.h"
+	"mnist.h"
+
+1611714852 c:\users\parker\documents\github\embv\cnn_basic\main.h
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdbool.h>
+	<math.h>
+	<float.h>
+
+1611716646 c:\users\parker\documents\github\embv\cnn_basic\mnist.h
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<fcntl.h>
+	<string.h>
+

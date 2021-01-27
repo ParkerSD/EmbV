@@ -15,13 +15,14 @@
 #define MAX_OUTPUT 30000 // this will change with CNN size, more MAC operations = higher final output
 #define NUM_OUTPUTS 10
 #define INPUT_SCALE 255
-#define LAYER_SIZE_GENERIC 16
-#define LAYER0_SIZE 16
-#define LAYER1_SIZE 16
+#define LAYER_SIZE_GENERIC 64
+#define LAYER0_SIZE 64
+#define LAYER1_SIZE 64
 #define ETA 0.9 // learning speed
 #define DESIRED_TRUE 1
 #define DESIRED_FALSE 0
 #define TEST_CYCLES 1000
+#define ACTIVE_THRESH 0.05 //threshold at which neuron is active and feeds data forward
 
 
 enum
