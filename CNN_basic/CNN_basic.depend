@@ -17,7 +17,7 @@
 	<math.h>
 	<float.h>
 
-1611791512 source:c:\users\parker\documents\github\embv\cnn_basic\main.c
+1611853455 source:c:\users\parker\documents\github\embv\cnn_basic\main.c
 	<stdint.h>
 	<stdio.h>
 	<stdlib.h>
@@ -25,10 +25,10 @@
 	<math.h>
 	<float.h>
 	<time.h>
-	"main.h"
 	"mnist.h"
+	"cnn.h"
 
-1611791697 c:\users\parker\documents\github\embv\cnn_basic\main.h
+1611811590 c:\users\parker\documents\github\embv\cnn_basic\main.h
 	<stdint.h>
 	<stdio.h>
 	<stdlib.h>
@@ -42,4 +42,12 @@
 	<unistd.h>
 	<fcntl.h>
 	<string.h>
+
+1611853624 c:\users\parker\documents\github\embv\cnn_basic\cnn.h
+	<stdint.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdbool.h>
+	<math.h>
+	<float.h>
 

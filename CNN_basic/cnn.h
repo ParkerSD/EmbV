@@ -1,6 +1,3 @@
-#ifndef MAIN_H_INCLUDED
-#define MAIN_H_INCLUDED
-
 
 #include <stdint.h>
 #include <stdio.h>
@@ -9,20 +6,20 @@
 #include <math.h>
 #include <float.h>
 
-//config
+        //CONFIG
 #define TOTAL_LAYERS 3
 #define PIXEL_COUNT 784
 #define NUM_OUTPUTS 10
 #define INPUT_SCALE 255
-#define LAYER_SIZE_MAX 200
-#define LAYER0_SIZE 200
-#define LAYER1_SIZE 200
-#define ETA 0.01 //learning speed (0.01 to 0.9)
+#define LAYER_SIZE_MAX 32
+#define LAYER0_SIZE 32
+#define LAYER1_SIZE 32
+#define ETA 0.4 // learning speed (0.01 to 0.9)
 #define DESIRED_TRUE 1
 #define DESIRED_FALSE 0
 #define TEST_CYCLES 1000
 #define ACTIVE_THRESH 0 //threshold at which neuron is active and feeds data forward
-#define EPOCHS 3
+#define EPOCHS 6
 
 
 enum
@@ -71,17 +68,3 @@ brain* randomize_input(brain* b);
 brain* mnist_train(brain* b);
 void accuracy(int m);
 void test_accuracy(brain *b);
-
-// weight arrays initialized randomly and dynamically, used for training then output as a model, need an option to import a model as well
-float Wij[PIXEL_COUNT][LAYER0_SIZE]; //first matrix of weights, PIXEL_COUNT rows by LAYER0_SIZE columns
-float Wjk[LAYER0_SIZE][LAYER1_SIZE]; //second matrix of weights, LAYER0_SIZE rows by LAYER1_SIZE columns
-float Wkl[LAYER1_SIZE][NUM_OUTPUTS]; //third matrix of weights, LAYER1_SIZE rows by NUM_OUTPUTS columns
-
-//bias arrays for each layer
-float bias_L0[LAYER0_SIZE] = {0.0}; //all biases should be initialized to zero per machinelearningmastery.com/why-initialize-a-neural-network-with-random-weights/
-float bias_L1[LAYER1_SIZE] = {0.0};
-float bias_out[NUM_OUTPUTS] = {0.0};
-
-
-
-#endif // MAIN_H_INCLUDED
