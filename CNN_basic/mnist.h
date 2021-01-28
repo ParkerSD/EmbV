@@ -65,7 +65,7 @@ void read_mnist_char(char *file_path, int num_data, int len_info, int arr_n, uns
     int i, j, k, fd;
     unsigned char *ptr;
 
-    if ((fd = open(file_path, O_RDONLY)) == -1) {
+    if ((fd = open(file_path, O_BINARY)) == -1) {
         fprintf(stderr, "couldn't open image file");
         exit(-1);
     }

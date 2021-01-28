@@ -11,7 +11,7 @@
 #include "mnist.h"
 
 //#define DEBUG
-#define TEST
+//#define TEST
 
 input* normalize_inputs(input* in)
 {
@@ -35,7 +35,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
                     temp += b->in->mat[i] * Wij[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_L0[n_num]; //one bias per neuron
-            temp = 1/(1+temp); //basic sigmoid
+            temp = 1/(1+exp(-temp));//1/(1+temp); //basic sigmoid
             #ifdef DEBUG
             printf("%f \n", temp);
             #endif // DEBUG
@@ -48,7 +48,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
                     temp += b->L0->n[i] * Wjk[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_L1[n_num]; //one bias per neuron
-            temp = 1/(1+temp); //basic sigmoid
+            temp = 1/(1+exp(-temp)); //basic sigmoid
             #ifdef DEBUG
             printf("%f \n", temp);
             #endif // DEBUG
@@ -61,7 +61,7 @@ float ff_calc(uint8_t curr_layer, brain* b, int n_num, float temp) //multiply we
                     temp += b->L1->n[i] * Wkl[i][n_num]; //each column holds all feed-in weights for that neuron
             }
             temp += bias_out[n_num]; //outputs, no activation function
-            temp = 1/(1+temp); //basic sigmoid
+            temp = 1/(1+exp(-temp)); //basic sigmoid
             #ifdef DEBUG
             printf("%f \n", temp);
             #endif // DEBUG
@@ -122,6 +122,9 @@ input* init_input(void)
 
 brain* init_brain(void) //TODO add asserts
 {
+    #ifdef DEBUG
+    printf("%s", "Initializing brain...\n");
+    #endif // DEBUG
     brain* brainX = malloc(sizeof(brain));
 
     brainX->in = init_input();
@@ -134,18 +137,21 @@ brain* init_brain(void) //TODO add asserts
 
 void init_weights(void) //init weights to a random value between 0-1
 {
+    #ifdef DEBUG
+    printf("%s", "Initializing weights...\n");
+    #endif // DEBUG
     //first layer
     for(int i=0; i<LAYER0_SIZE; i++) // columns
         for(int x=0; x<PIXEL_COUNT; x++) // rows
-            Wij[x][i] = (float)rand() / (float)((unsigned)RAND_MAX + 1); //random number between 0-1. excluding 1
+            Wij[x][i] = -1+2*((float)rand())/RAND_MAX;//random num (-1 to 1) was (float)rand()/(float)((unsigned)RAND_MAX + 1); random number between 0-1. excluding 1
     //second
     for(int z=0; z<LAYER1_SIZE; z++)
         for(int y=0; y<LAYER0_SIZE; y++)
-            Wjk[y][z] = (float)rand() / (float)((unsigned)RAND_MAX + 1);
+            Wjk[y][z] = -1+2*((float)rand())/RAND_MAX;
     //third
     for(int j=0; j<NUM_OUTPUTS; j++)
         for(int k=0; k<LAYER1_SIZE; k++)
-            Wkl[k][j] = (float)rand() / (float)((unsigned)RAND_MAX + 1);
+            Wkl[k][j] = -1+2*((float)rand())/RAND_MAX;
 }
 
 brain* softmax(brain* b) //TODO extract cost calculation
@@ -169,6 +175,17 @@ brain* softmax(brain* b) //TODO extract cost calculation
     }
     b->softmax[b->result] = 1; // set resultant output to 1
 
+    #ifdef DEBUG
+    printf("%s \n", "____________softmax outputs");
+    for(int s=0; s<NUM_OUTPUTS; s++)
+        printf("%d \n", b->softmax[s]);
+
+    printf("%s", "Truth: ");
+    printf("%d \n", b->truth);
+    printf("%s", "Result: ");
+    printf("%d \n", b->result);
+    #endif
+
     return b;
 }
 
@@ -182,7 +199,7 @@ brain* bp(brain* b) // TODO test result vs true result
     {
         if(i == b->truth)
             b->out_grad[i] = (DESIRED_TRUE - b->out[i]) * (b->out[i] *(1-b->out[i])); //gradient of an output-layer neuron is equal to the target (desired) value minus the computed output value,  function
-        else                                                //times the calculus derivative of the output-layer activation
+        else                                                                        //times the calculus derivative of the output-layer activation
             b->out_grad[i] = (DESIRED_FALSE - b->out[i]) * (b->out[i] *(1-b->out[i]));
 
         for(int x=0; x<LAYER1_SIZE; x++)
@@ -224,7 +241,7 @@ brain* bp(brain* b) // TODO test result vs true result
 }
 
 
-float accuracy(int m)
+void accuracy(int m)
 {
     static float total_matches;
     static float total_tests;
@@ -240,7 +257,21 @@ float accuracy(int m)
     printf("%s", "Accuracy is ");
     printf("%f", acc);
     printf("%s \n", "%");
-    return acc;
+}
+
+void test_accuracy(brain *b)
+{
+    int match = 0;
+
+    if(b->result == b->truth)
+        match = 1;
+
+    accuracy(match);
+    printf("%d", match);
+    printf("%s", " match for output ");
+    printf("%d", b->truth);
+    printf("%s", ", result was ");
+    printf("%d \n", b->result);
 }
 
 brain* randomize_input(brain* b)
@@ -252,7 +283,6 @@ brain* randomize_input(brain* b)
 
 brain* test(brain* b, int t)
 {
-    int match = 0;
     b = randomize_input(b);
     b->in = normalize_inputs(b->in);
 
@@ -264,22 +294,46 @@ brain* test(brain* b, int t)
             b = softmax(b);
             b = bp(b);
         }
-    if(b->result == b->truth)
-        match=1;
 
-    accuracy(match);
-    printf("%d", match);
-    printf("%s", " match for output ");
-    printf("%d", t);
-    printf("%s", ", result was ");
-    printf("%d \n", b->result);
+    void test_accuracy(b);
 
     return b;
 }
 
+brain* mnist_train(brain* b)
+{
+    printf("%s \n", "Training...");
+
+    load_mnist(); // fetch dataset
+    //print_mnist_pixel(test_image, 30); // test data read
+    //print_mnist_label(test_label, 30);
+
+
+    for(int i=0; i<NUM_TRAIN; i++)
+    {
+        b->truth = train_label[i];// set truth as current label
+        for(int s=0; s<SIZE; s++)
+        {
+            b->in->mat[s] = (float)train_image_char[i][s];
+            //printf("%f \n", b->in->mat[s]); //remove
+        }
+
+        b->in = normalize_inputs(b->in);
+
+        for(uint8_t i = 0; i<TOTAL_LAYERS; i++)
+            b = ff(i, b); // feed forward
+
+        b = softmax(b);
+        b = bp(b);
+    }
+    printf("%s \n", "Completed");
+    return b;
+}
 int main(void)
 {
     //MASTER TODO
+        //Add convolution and pooling layers
+        //add more hidden layers
         //fixed point (int) implementation
         //implement death and regeneration of neurons. This should help with overfitting
 
@@ -300,49 +354,44 @@ int main(void)
         //kill and regen some neurons
         //export model when finished
 
-    #ifdef DEBUG
-    printf("%s", "Initializing brain...\n");
-    #endif // DEBUG
+
     brain* mind;
     mind = init_brain();
 
-    #ifdef DEBUG
-    printf("%s", "Initializing weights...\n");
-    #endif // DEBUG
     init_weights();
 
-    #ifdef TEST
-    printf("%s", "WARNING: The truth is being simulated.\n\n");
-    #endif // TEST
-
+    for(int e=0; e<EPOCHS; e++)
+    {
+        mind = mnist_train(mind);
+    }
 
     while(1)
     {
         #ifdef TEST
+        printf("%s", "WARNING: The truth is being simulated.\n\n");
         //init_weights(); // optional weight reset
         int test_output = 0;
         mind = test(mind, test_output);
         #endif // test
 
-        #ifndef TEST
-        //TODO fetch dataset
-        mind->truth = 0; // placeholder
-        mind->in = normalize_inputs(mind->in);
+        #ifndef TEST //begin inferencing
+        for(int i=0; i<NUM_TEST; i++)
+        {
+            for(int s=0; s<SIZE; s++)
+                mind->in->mat[s] = (float)test_image_char[i][s];; // transfer test data to input layer
 
-        for(uint8_t i = 0; i<TOTAL_LAYERS; i++)
-            mind = ff(i, mind); // feed forward
+            mind->truth = test_label[i]; // set truth
+            mind->in = normalize_inputs(mind->in);
 
-        mind = softmax(mind);
-        #ifdef DEBUG
-        printf("%s \n", "____________softmax outputs");
-        for(int s=0; s<NUM_OUTPUTS; s++)
-            printf("%d \n", mind->softmax[s]);
-        #endif
+            for(uint8_t i = 0; i<TOTAL_LAYERS; i++)
+                mind = ff(i, mind); // feed forward
 
-        mind = bp(mind); //WARNING the truth is being simulated
+            mind = softmax(mind);
+            test_accuracy(mind);
+        }
+
         //TODO output model
         #endif // TEST
-
     }
 }
 

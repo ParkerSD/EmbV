@@ -12,17 +12,17 @@
 //config
 #define TOTAL_LAYERS 3
 #define PIXEL_COUNT 784
-#define MAX_OUTPUT 30000 // this will change with CNN size, more MAC operations = higher final output
 #define NUM_OUTPUTS 10
 #define INPUT_SCALE 255
-#define LAYER_SIZE_GENERIC 64
-#define LAYER0_SIZE 64
-#define LAYER1_SIZE 64
-#define ETA 0.9 // learning speed
+#define LAYER_SIZE_MAX 200
+#define LAYER0_SIZE 200
+#define LAYER1_SIZE 200
+#define ETA 0.01 //learning speed (0.01 to 0.9)
 #define DESIRED_TRUE 1
 #define DESIRED_FALSE 0
 #define TEST_CYCLES 1000
-#define ACTIVE_THRESH 0.05 //threshold at which neuron is active and feeds data forward
+#define ACTIVE_THRESH 0 //threshold at which neuron is active and feeds data forward
+#define EPOCHS 3
 
 
 enum
@@ -36,8 +36,8 @@ typedef float neuron;
 
 typedef struct layer
 {
-    neuron n[LAYER_SIZE_GENERIC];
-    float gradient[LAYER_SIZE_GENERIC];
+    neuron n[LAYER_SIZE_MAX];
+    float gradient[LAYER_SIZE_MAX];
 }layer;
 
 typedef struct input
@@ -68,6 +68,9 @@ brain* softmax(brain* b);
 brain* bp(brain* b); //backprop
 brain* test(brain* b, int t);
 brain* randomize_input(brain* b);
+brain* mnist_train(brain* b);
+void accuracy(int m);
+void test_accuracy(brain *b);
 
 // weight arrays initialized randomly and dynamically, used for training then output as a model, need an option to import a model as well
 float Wij[PIXEL_COUNT][LAYER0_SIZE]; //first matrix of weights, PIXEL_COUNT rows by LAYER0_SIZE columns
