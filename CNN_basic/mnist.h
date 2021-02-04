@@ -171,8 +171,8 @@ void save_image(int n, char name[])
     for (y=0; y<height[n]; y++)
         for (x=0; x<width[n]; x++)
             fputc(image[n][x][y], fp);
-        fclose(fp);
-        printf("Image was saved successfully\n");
+    fclose(fp);
+    printf("Image was saved successfully\n");
 }
 
 

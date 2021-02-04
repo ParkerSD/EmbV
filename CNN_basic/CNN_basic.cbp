@@ -31,10 +31,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="cnn.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="cnn.h" />
 		<Unit filename="main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="main.h" />
+		<Unit filename="mnist.h" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

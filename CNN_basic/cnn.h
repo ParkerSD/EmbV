@@ -5,22 +5,20 @@
 #include <stdbool.h>
 #include <math.h>
 #include <float.h>
+#include "config.h"
 
-        //CONFIG
-#define TOTAL_LAYERS 3
-#define PIXEL_COUNT 784
-#define NUM_OUTPUTS 10
-#define INPUT_SCALE 255
-#define LAYER_SIZE_MAX 32
-#define LAYER0_SIZE 32
-#define LAYER1_SIZE 32
-#define ETA 0.4 // learning speed (0.01 to 0.9)
-#define DESIRED_TRUE 1
-#define DESIRED_FALSE 0
-#define TEST_CYCLES 1000
-#define ACTIVE_THRESH 0 //threshold at which neuron is active and feeds data forward
-#define EPOCHS 6
+ #define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
 
+//#define DEBUG
+
+enum
+{
+    e_one_d= 0,
+    e_two_d
+};
 
 enum
 {
@@ -29,7 +27,20 @@ enum
     e_layer_one = 2
 };
 
+enum
+{
+    e_conv_zero = 0,
+    e_conv_one = 1,
+    e_conv_two = 2
+};
+
 typedef float neuron;
+
+typedef struct input
+{
+    neuron mat[PIXEL_COUNT];// 28x28 image (MNIST)
+    neuron mat2D[IMAGE_HEIGHT+(2*PAD_IN)][IMAGE_WIDTH+(2*PAD_IN)]; // add room for padding
+}input;
 
 typedef struct layer
 {
@@ -37,29 +48,43 @@ typedef struct layer
     float gradient[LAYER_SIZE_MAX];
 }layer;
 
-typedef struct input
+
+typedef struct conv_layer // holds output of convolution
 {
-    neuron mat[PIXEL_COUNT]; // 28x28 image (MNIST)
-}input;
+    neuron L0[FILT_A_NUM][H2A+(2*PAD_A)][W2A+(2*PAD_A)]; //3D stacks of filter outputs
+    neuron L0_POOL[FILT_A_NUM][L0_POOL_Y+(2*PAD_A)][L0_POOL_X+(2*PAD_A)];
+    neuron L1[FILT_B_NUM][H2B+(2*PAD_B)][W2B+(2*PAD_B)];
+    neuron L1_POOL[FILT_B_NUM][L1_POOL_Y+(2*PAD_B)][L1_POOL_X+(2*PAD_B)];
+    neuron L2[FILT_C_NUM][H2C][W2C];
+    neuron L2_POOL[FILT_C_NUM][L2_POOL_Y][L2_POOL_X];
+    neuron flat[FLAT_SIZE]; // flat buffer
+}conv_layer;
+
+
 
 typedef struct brain
 {
     input* in;
+    conv_layer* c;
     layer* L0;
     layer* L1;
     int result;
     int truth;
-    float out[NUM_OUTPUTS];
-    float out_grad[NUM_OUTPUTS];
+    neuron out[NUM_OUTPUTS];
+    float out_grad[NUM_OUTPUTS]; //output gradient
     uint8_t softmax[NUM_OUTPUTS]; //decimal digits 0 - 9
 }brain;
 
-//function defs
-input* normalize_inputs(input* in); // scale input to 0-1
+
+
+//function declarations
+input* normalize_inputs(input* in, bool two_d); // scale input to 0-1
 brain* ff(uint8_t curr_layer, brain*);   // feed forward
 brain* init_brain(void);
 input* init_input(void);
+conv_layer* init_conv(void);
 layer* init_layer(void);
+void init_filters(void);
 void init_weights(void);
 brain* softmax(brain* b);
 brain* bp(brain* b); //backprop
@@ -68,3 +93,10 @@ brain* randomize_input(brain* b);
 brain* mnist_train(brain* b);
 void accuracy(int m);
 void test_accuracy(brain *b);
+brain* conv(brain* b, uint8_t curr_layer);
+brain* max_pool(brain* b, uint8_t curr_layer);
+brain* unroll(brain* b);
+int* flat_to_2D(uint8_t side, int inc, int* coord);
+
+
+
