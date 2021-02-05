@@ -51,10 +51,10 @@ typedef struct layer
 
 typedef struct conv_layer // holds output of convolution
 {
-    neuron L0[FILT_A_NUM][H2A+(2*PAD_A)][W2A+(2*PAD_A)]; //3D stacks of filter outputs
-    neuron L0_POOL[FILT_A_NUM][L0_POOL_Y+(2*PAD_A)][L0_POOL_X+(2*PAD_A)];
-    neuron L1[FILT_B_NUM][H2B+(2*PAD_B)][W2B+(2*PAD_B)];
-    neuron L1_POOL[FILT_B_NUM][L1_POOL_Y+(2*PAD_B)][L1_POOL_X+(2*PAD_B)];
+    neuron L0[FILT_A_NUM][H2A][W2A]; //3D stacks of filter outputs
+    neuron L0_POOL[FILT_A_NUM][L0_POOL_Y][L0_POOL_X];
+    neuron L1[FILT_B_NUM][H2B][W2B];
+    neuron L1_POOL[FILT_B_NUM][L1_POOL_Y][L1_POOL_X];
     neuron L2[FILT_C_NUM][H2C][W2C];
     neuron L2_POOL[FILT_C_NUM][L2_POOL_Y][L2_POOL_X];
     neuron flat[FLAT_SIZE]; // flat buffer

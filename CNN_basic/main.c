@@ -27,7 +27,7 @@ brain* mnist_train(brain* b)
         b->truth = train_label[i];// set truth as current MNIST label
         b->in = normalize_inputs(b->in, e_two_d);
 
-        for(uint8_t c = 0; c<TOTAL_CONV_LAYERS; c++)
+        for(uint8_t c = 0; c<TOTAL_CONV_LAYERS; c++) //currently only using first conv layer for testing
             b = conv(b, c);//convolutions
 
         b = unroll(b);
