@@ -11,16 +11,16 @@
 #define LAYER_SIZE_MAX 32
 #define LAYER0_SIZE 32 // must be power of 2
 #define LAYER1_SIZE 32
-#define ETA 0.1// learning speed (0.01 to 0.9)
+#define ETA 0.2 // learning speed (0.01 to 0.9)
 #define DESIRED_TRUE 1
 #define DESIRED_FALSE 0
 #define TEST_CYCLES 1000
-#define ACTIVE_THRESH 0 //threshold at which neuron is active and feeds data forward
-#define EPOCHS 3 // 6 is optimum for MLP
+#define ACTIVE_THRESH 0 // threshold at which neuron is active and feeds data forward
+#define EPOCHS 1 // 6 is optimum for MLP
 
 #define TOTAL_CONV_LAYERS 1
 #define FILT_A_NUM 4 // number of filters (power of 2)
-#define FILT_A_SIZE 3 // filter 0 size
+#define FILT_A_SIZE 5 // filter 0 size
 #define FILT_B_NUM 2 // number of filters
 #define FILT_B_SIZE 3 // filter 1 size
 #define FILT_C_NUM 2 // number of filters, must be power of 2
@@ -39,7 +39,7 @@
 #define H2C ((((L1_POOL_Y) - FILT_C_SIZE + (2*PAD_B))/STRIDE_C)+1)
 #define A_SIZE ((FILT_A_NUM)*(L0_POOL_Y)*(L0_POOL_X))
 #define B_SIZE ((FILT_B_NUM)*(L1_POOL_Y)*(L1_POOL_X))
-#define FLAT_SIZE A_SIZE //modified for single conv layer, was ((FILT_C_NUM)*(L2_POOL_Y)*(L2_POOL_X))
+#define FLAT_SIZE ((FILT_A_NUM)*(H2A)*(W2A))//modified for single conv layer, was ((FILT_C_NUM)*(L2_POOL_Y)*(L2_POOL_X))
 #define DENSE_RANGE ((LAYER0_SIZE)/(FILT_C_NUM)) //deprecated, last conv layer should be fully connected to first dense layer
 #define FEAT_MAP_SIZE_C ((FLAT_SIZE)/(FILT_C_NUM))
 #define FEAT_MAP_SIZE_B ((B_SIZE)/(FILT_B_NUM))
@@ -59,5 +59,7 @@
 #define L2_POOL_SIZE ((FLAT_SIZE)/(L2_POOL_FACTOR))
 #define L2_POOL_Y (H2C)/(L2_POOL_FACTOR)
 #define L2_POOL_X (W2C)/(L2_POOL_FACTOR)
+
+#define FEAT_MAP_SIZE_A_NOPOOL ((H2A)*(W2A))
 
 #endif // CONFIG_H_INCLUDED

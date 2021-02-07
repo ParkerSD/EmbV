@@ -25,11 +25,11 @@ static float bias_L1[LAYER1_SIZE] = {0.0};
 static float bias_out[NUM_OUTPUTS] = {0.0};
 
 static float filt_A[FILT_A_NUM][FILT_A_SIZE][FILT_A_SIZE]; //3D filter arrays
-static float conv_L0_grad[FILT_A_SIZE][FILT_A_SIZE];
+static float conv_L0_grad[H2A][W2A];
 static float filt_B[FILT_B_NUM][FILT_B_SIZE][FILT_B_SIZE];
-static float conv_L1_grad[FILT_B_SIZE][FILT_B_SIZE];
+static float conv_L1_grad[H2B][W2B];
 static float filt_C[FILT_C_NUM][FILT_C_SIZE][FILT_C_SIZE];
-static float conv_L2_grad[FILT_C_SIZE][FILT_C_SIZE]; //one gradient per weight (per filter value)
+static float conv_L2_grad[H2C][W2C]; //one gradient per output value
 
 static float bias_filt_A[FILT_A_NUM] = {0.0};//filter biases, one bias for each filter layer
 static float bias_filt_B[FILT_B_NUM] = {0.0};
@@ -209,14 +209,14 @@ brain* conv(brain* b, uint8_t curr_layer)    //result of conv is  W2 = (W1 - F +
     return b;
 }
 
-brain* unroll(brain* b)  // modified for single conv layer
+brain* unroll(brain* b)  // modified for single conv layer, no pool
 {
     int i=0;
     for(int z=0; z<FILT_A_NUM; z++)
-        for(int y=0; y<L0_POOL_Y; y++) //no padding in L2_pool layer
-            for(int x=0; x<L0_POOL_X; x++)
+        for(int y=0; y<H2A; y++)
+            for(int x=0; x<W2A; x++)
             {
-                b->c->flat[i] = b->c->L0_POOL[z][y][x];
+                b->c->flat[i] = b->c->L0[z][y][x];
                 i++;
             }
 
@@ -510,6 +510,7 @@ brain* bp(brain* b) // TODO test result vs true result
 
         bias_L0[g] = b->L0->gradient[g] * ETA;
     }
+
 /*
     //_____________________________________________ERROR: conv layer backprop below broken_________________________________________
     //                                 NOTE: determine how to effectively backprop thru max pool layers
@@ -593,40 +594,44 @@ brain* bp(brain* b) // TODO test result vs true result
     //image input <- conv L0
     for(int i=0; i<FILT_A_NUM; i++)
     {
-        for(int x=(i*FEAT_MAP_SIZE_A); x<FEAT_MAP_SIZE_A+(i*FEAT_MAP_SIZE_A); x++)
+        float temp=0;
+        for(int j=(i*FEAT_MAP_SIZE_A_NOPOOL); j<FEAT_MAP_SIZE_A_NOPOOL+(i*FEAT_MAP_SIZE_A_NOPOOL); j++) // maps to complete conv_L0_grad array
         {
-            grad_weight_product = 0;
             /*
             for(int l=0; l<FILT_B_SIZE; l++)
                 for(int m=0; m<FILT_B_SIZE; m++)
                     grad_weight_product += (conv_L1_grad[l][m] * filt_B[i][l][m]); //breaking logic here, filt_B is reference by filt_A num i
-                    */
-            for(int w=0; w<LAYER0_SIZE; w++) // each feature map has limited connectivity to first dense layer
-                grad_weight_product += (b->L0->gradient[w] * Wij[x][w]); // static float Wij[FLAT_SIZE][LAYER0_SIZE];
+            */
+            grad_weight_product = 0;
+            for(int w=0; w<LAYER0_SIZE; w++)
+                grad_weight_product += (b->L0->gradient[w] * Wij[j][w]); // static float Wij[FLAT_SIZE][LAYER0_SIZE];
 
-            xy = flat_to_2D(L0_POOL_X, x, xy); // test this
-            local_grad = (b->c->L0_POOL[i][*xy][*(xy+1)]*(1-b->c->L0_POOL[i][*xy][*(xy+1)])); // sigmoid derivative
+            xy = flat_to_2D(W2A, j, xy); // get 2D coordinates from flat buffer
+            local_grad = ((b->c->L0[i][*xy][*(xy+1)]) * (1-(b->c->L0[i][*xy][*(xy+1)]))); // sigmoid derivative
+            conv_L0_grad[*xy][*(xy+1)] = local_grad * grad_weight_product;
 
-            for(int y=0; y<FILT_A_SIZE; y++)
-                for(int x=0; x<FILT_A_SIZE; x++)
-                    conv_L0_grad[y][x] = local_grad * grad_weight_product; // is this correct derivative?
+            //bias_filt_A[i] += ((conv_L0_grad[*xy][*(xy+1)]) * (ETA)); // bias is db = dy1 + dy2 + dy3... when uncommented 9% accuracy, thus are the calculated gradients wrong?
 
-           // printf("%s \n", "Filt A____________________ ");
-            for(int l=0; l<FILT_A_SIZE; l++)
-                for(int m=0; m<FILT_A_SIZE; m++)
-                {
-                    filt_A[i][l][m] += ETA * conv_L0_grad[l][m] * b->in->mat2D[l+y_offset][m+x_offset]; //NOTE: new filter kernel = (input feature map) * (gradients) * (learning rate)
-                    //printf("%f \n", filt_A[i][l][m]);
-                    //bias_filt_A[i] = conv_L0_grad[l][m] * ETA; //wrong
+        }
+
+        for(int g=0; g<(FILT_A_SIZE*FILT_A_SIZE); g++) // total filter area = (3x3)
+        {
+            for(int l=0; l<H2A; l++)
+                for(int m=0; m<W2A; m++)
+                {                                                                        // backprop by convolving gradients with input feature map
+                    temp += (conv_L0_grad[l][m] * b->in->mat2D[l+y_offset][m+x_offset]); // new filter kernel = (input feature map) * (gradients) * (learning rate)
                 }
 
-            x_offset+=STRIDE_A; // check logic here
-            if(x_offset>L0_POOL_X-1)
+            filt_A[i][y_offset][x_offset] += ((temp) * (ETA));
+
+            x_offset+=STRIDE_A; // convolves gradients with input map in stride
+            if(x_offset>FILT_A_SIZE-1)
             {
                 x_offset=0;
                 y_offset+=STRIDE_A;
             }
         }
+
         y_offset=0;
     }
 

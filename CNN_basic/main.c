@@ -47,7 +47,10 @@ int main(void)
     //MASTER TODO
         //Add convolution and pooling layers
         //fixed point (int) implementation
-        //implement death and regeneration of neurons. This should help with overfitting on small datasets
+        //implement death and regeneration of neurons <15%, a variant of dropout reg, this should help with overfitting on small datasets
+        // add variable learning rate, reduce learning rate at a plateau
+        // image preprocessing, subtracting the mean activity over the training set from each pixel and dividing by their standard deviation
+        // data augmentation. rotate images, shift, and blur
 
     //CNN Processes
         //optionally import model execution or dataset for training
