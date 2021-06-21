@@ -1,7 +1,7 @@
 #ifndef CONFIG_H_INCLUDED
 #define CONFIG_H_INCLUDED
 
-        //CNN CONFIG
+
 #define TOTAL_LAYERS 3
 #define IMAGE_HEIGHT 28
 #define IMAGE_WIDTH 28
@@ -9,24 +9,27 @@
 #define NUM_OUTPUTS 10
 #define INPUT_SCALE 255
 #define LAYER_SIZE_MAX 32
-#define LAYER0_SIZE 32 // must be power of 2
+#define LAYER0_SIZE 32 // number of neurons in dense layer,  must be power of 2
 #define LAYER1_SIZE 32
 #define ETA 0.1// learning speed (0.01 to 0.9)
 #define DESIRED_TRUE 1
 #define DESIRED_FALSE 0
 #define TEST_CYCLES 1000
 #define ACTIVE_THRESH 0 //threshold at which neuron is active and feeds data forward
-#define EPOCHS 3 // 6 is optimum for MLP
+#define EPOCHS 1 // 6 is optimum for MLP
 
 #define TOTAL_CONV_LAYERS 1
-#define FILT_A_NUM 4 // number of filters (power of 2)
-#define FILT_A_SIZE 3 // filter 0 size
-#define FILT_B_NUM 2 // number of filters
+#define FILT_A_NUM 2 // number of filters (power of 2)
+#define FILT_A_SIZE 5 // filter 0 size
+#define FILT_A_DEPTH 1 //number of kernels in filter, must match input depth
+#define FILT_B_NUM 4 // number of filters
 #define FILT_B_SIZE 3 // filter 1 size
-#define FILT_C_NUM 2 // number of filters, must be power of 2
+#define FILT_B_DEPTH FILT_A_NUM //input depth depends on previous layer filter count
+#define FILT_C_NUM 4 // number of filters, must be power of 2
 #define FILT_C_SIZE 3 // filter 2 size
-#define PAD_IN 2 // padding for input,
-#define PAD_A 2 // padding for filter A
+#define FILT_C_DEPTH FILT_B_NUM
+#define PAD_IN 1 // padding for input,
+#define PAD_A 1 // padding for filter A
 #define PAD_B 1 // padding for filter B
 #define STRIDE_A 1
 #define STRIDE_B 1
@@ -39,7 +42,7 @@
 #define H2C ((((L1_POOL_Y) - FILT_C_SIZE + (2*PAD_B))/STRIDE_C)+1)
 #define A_SIZE ((FILT_A_NUM)*(L0_POOL_Y)*(L0_POOL_X))
 #define B_SIZE ((FILT_B_NUM)*(L1_POOL_Y)*(L1_POOL_X))
-#define FLAT_SIZE A_SIZE //modified for single conv layer, was ((FILT_C_NUM)*(L2_POOL_Y)*(L2_POOL_X))
+#define FLAT_SIZE A_SIZE //WARNING: modified for single conv layer, was ((FILT_C_NUM)*(L2_POOL_Y)*(L2_POOL_X))
 #define DENSE_RANGE ((LAYER0_SIZE)/(FILT_C_NUM)) //deprecated, last conv layer should be fully connected to first dense layer
 #define FEAT_MAP_SIZE_C ((FLAT_SIZE)/(FILT_C_NUM))
 #define FEAT_MAP_SIZE_B ((B_SIZE)/(FILT_B_NUM))

@@ -17,7 +17,7 @@
 	<math.h>
 	<float.h>
 
-1612539078 source:c:\users\parker\documents\github\embv\cnn_basic\main.c
+1624300725 source:c:\users\parker\documents\github\embv\cnn_basic\main.c
 	<stdint.h>
 	<stdio.h>
 	<stdlib.h>
@@ -37,14 +37,14 @@
 	<math.h>
 	<float.h>
 
-1612026623 c:\users\parker\documents\github\embv\cnn_basic\mnist.h
+1624300725 c:\users\parker\documents\github\embv\cnn_basic\mnist.h
 	<stdio.h>
 	<stdlib.h>
 	<unistd.h>
 	<fcntl.h>
 	<string.h>
 
-1612480653 c:\users\parker\documents\github\embv\cnn_basic\cnn.h
+1624300725 c:\users\parker\documents\github\embv\cnn_basic\cnn.h
 	<stdint.h>
 	<stdio.h>
 	<stdlib.h>
@@ -53,7 +53,7 @@
 	<float.h>
 	"config.h"
 
-1612547629 source:c:\users\parker\documents\github\embv\cnn_basic\cnn.c
+1624305458 source:c:\users\parker\documents\github\embv\cnn_basic\cnn.c
 	<stdint.h>
 	<stdio.h>
 	<stdlib.h>
@@ -65,5 +65,5 @@
 	"cnn.h"
 	"config.h"
 
-1612548495 c:\users\parker\documents\github\embv\cnn_basic\config.h
+1624305790 c:\users\parker\documents\github\embv\cnn_basic\config.h
 

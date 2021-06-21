@@ -24,11 +24,11 @@ static float bias_L0[LAYER0_SIZE] = {0.0}; //all biases should be initialized to
 static float bias_L1[LAYER1_SIZE] = {0.0};
 static float bias_out[NUM_OUTPUTS] = {0.0};
 
-static float filt_A[FILT_A_NUM][FILT_A_SIZE][FILT_A_SIZE]; //3D filter arrays
+static float filt_A[FILT_A_NUM][FILT_A_DEPTH][FILT_A_SIZE][FILT_A_SIZE]; //array of 3D filter arrays, depth equals number of kernels(2d arrays) and must match input depth
 static float conv_L0_grad[FILT_A_SIZE][FILT_A_SIZE];
-static float filt_B[FILT_B_NUM][FILT_B_SIZE][FILT_B_SIZE];
+static float filt_B[FILT_B_NUM][FILT_B_DEPTH][FILT_B_SIZE][FILT_B_SIZE];
 static float conv_L1_grad[FILT_B_SIZE][FILT_B_SIZE];
-static float filt_C[FILT_C_NUM][FILT_C_SIZE][FILT_C_SIZE];
+static float filt_C[FILT_C_NUM][FILT_C_DEPTH][FILT_C_SIZE][FILT_C_SIZE];
 static float conv_L2_grad[FILT_C_SIZE][FILT_C_SIZE]; //one gradient per weight (per filter value)
 
 static float bias_filt_A[FILT_A_NUM] = {0.0};//filter biases, one bias for each filter layer
@@ -89,76 +89,81 @@ brain* conv(brain* b, uint8_t curr_layer)    //result of conv is  W2 = (W1 - F +
             #ifdef DEBUG
             printf("%s \n", "____________conv layer 0");
             #endif // DEBUG
-            for(int z=0; z<FILT_A_NUM; z++) // input image is depth 1
+            for(int z=0; z<FILT_A_NUM; z++) // input image is depth 1, number of filters creates depth of next layer
             {
-                for(int h=0; h<H2A; h++) //NOTE: mind the padding in next layer
+                for(int d=0; d<FILT_A_DEPTH; d++)
                 {
-                    for(int w=0; w<W2A; w++) //next layer dimensions determine number of strides for filter
+                    for(int h=0; h<H2A; h++) //NOTE: mind the padding in next layer
                     {
-                        for(int y=0; y<FILT_A_SIZE; y++)
-                            for(int x=0; x<FILT_A_SIZE; x++)
-                                accum += b->in->mat2D[y+y_offset][x+x_offset] * filt_A[z][y][x]; // multiply filter with input image from top left to right
+                        for(int w=0; w<W2A; w++) //next layer dimensions determine number of strides for filter
+                        {
+                            for(int y=0; y<FILT_A_SIZE; y++)
+                                for(int x=0; x<FILT_A_SIZE; x++)
+                                    accum += b->in->mat2D[y+y_offset][x+x_offset] * filt_A[z][d][y][x]; // multiply filter with input image from top left to right
 
-                        x_offset += STRIDE_A;
-                        accum += bias_filt_A[z]; // add bias
-                        if(accum > 0) // relu
-                        {
-                            b->c->L0[z][h][w] = 1/(1+exp(-accum));
-                            accum = 0;
+                            x_offset += STRIDE_A;
+                            accum += bias_filt_A[z]; // add bias
+                            if(accum > 0) // relu
+                            {
+                                b->c->L0[z][h][w] = 1/(1+exp(-accum));
+                                accum = 0;
+                            }
+                            else
+                            {
+                                b->c->L0[z][h][w] = 0;
+                                accum = 0;
+                            }
+                            #ifdef DEBUG
+                            printf("%f \n", b->c->L0[z][h][w]);
+                            #endif // DEBUG
                         }
-                        else
-                        {
-                            b->c->L0[z][h][w] = 0;
-                            accum = 0;
-                        }
-                        #ifdef DEBUG
-                        printf("%f \n", b->c->L0[z][h][w]);
-                        #endif // DEBUG
+                        x_offset=0;
+                        y_offset+=STRIDE_A;
                     }
-                    x_offset=0;
-                    y_offset+=STRIDE_A;
+                    y_offset=0;
                 }
-                y_offset=0;
             }
             b=max_pool(b,curr_layer); //max_pool each depth layer of b->c->L0
             break;
 
-                                //NOTE each filter operates thru the depth of input layer and accumulates so that D = num_filters, filt_A depth is 4(input)and filt_B depth is 4(output)
+
         case e_conv_one:        //convolve b->c->L0 with filt_B, pool and store in b->c->L1
             #ifdef DEBUG
             printf("%s \n", "____________conv layer 1");
             #endif // DEBUG
             for(int z=0; z<FILT_B_NUM; z++) //number of filters
             {
-                for(int h=0; h<H2B; h++) //NOTE: mind the padding in next layer
+                for(int d=0; d<FILT_B_DEPTH; d++) // input layer is depth FILT_A_NUM
                 {
-                    for(int w=0; w<W2B; w++)
+                    for(int h=0; h<H2B; h++) //NOTE: mind the padding in next layer
                     {
-                        for(int d=0; d<FILT_A_NUM; d++) // input layer is depth FILT_A_NUM, here we move thru each layer of input
+                        for(int w=0; w<W2B; w++)
+                        {
                             for(int y=0; y<FILT_B_SIZE; y++)
                                 for(int x=0; x<FILT_B_SIZE; x++)
-                                    accum += b->c->L0_POOL[d][y+y_offset][x+x_offset] * filt_B[z][y][x]; // multiply filter with input image from top left to right
+                                    accum += b->c->L0_POOL[d][y+y_offset][x+x_offset] * filt_B[z][d][y][x]; // multiply filter with input image from top left to right
 
-                        x_offset += STRIDE_B;
-                        accum += bias_filt_B[z]; // add bias
-                        if(accum > 0) // relu
-                        {
-                            b->c->L1[z][h][w] = 1/(1+exp(-accum)); //sigmoid
-                            accum = 0;
+                            x_offset += STRIDE_B;
+                            accum += bias_filt_B[z]; // add bias
+                            if(accum > 0) // relu
+                            {
+                                b->c->L1[z][h][w] = 1/(1+exp(-accum)); //sigmoid
+                                accum = 0;
+                            }
+                            else
+                            {
+                                b->c->L1[z][h][w] = 0;
+                                accum = 0;
+                            }
+                            #ifdef DEBUG
+                            printf("%f \n", b->c->L1[z][h][w]);
+                            #endif // DEBUG
                         }
-                        else
-                        {
-                            b->c->L1[z][h][w] = 0;
-                            accum = 0;
-                        }
-                        #ifdef DEBUG
-                        printf("%f \n", b->c->L1[z][h][w]);
-                        #endif // DEBUG
+                        x_offset=0;
+                        y_offset+=STRIDE_B;
                     }
-                    x_offset=0;
-                    y_offset+=STRIDE_B;
+                    y_offset=0;
                 }
-                y_offset=0;
             }
             b=max_pool(b,curr_layer); //max_pool each depth layer of b->c->L1
             break;
@@ -169,35 +174,37 @@ brain* conv(brain* b, uint8_t curr_layer)    //result of conv is  W2 = (W1 - F +
             #endif // DEBUG
             for(int z=0; z<FILT_C_NUM; z++) //number of filters
             {
-                for(int h=0; h<H2C; h++) //NOTE: next layer is dense, so no padding in next layer
+                for(int d=0; d<FILT_C_DEPTH; d++) // input layer is depth FILT_B_NUM
                 {
-                    for(int w=0; w<W2C; w++)
+                    for(int h=0; h<H2C; h++) //NOTE: next layer is dense, so no padding in next layer
                     {
-                        for(int d=0; d<FILT_B_NUM; d++) // input layer is depth FILT_B_NUM, here we move thru the depth of input layer
-                            for(int y=0; y<FILT_C_SIZE; y++)
-                                for(int x=0; x<FILT_C_SIZE; x++)
-                                    accum += b->c->L1_POOL[d][y+y_offset][x+x_offset] * filt_C[z][y][x]; // multiply filter with input image from top left to right
+                        for(int w=0; w<W2C; w++)
+                        {
+                                for(int y=0; y<FILT_C_SIZE; y++)
+                                    for(int x=0; x<FILT_C_SIZE; x++)
+                                        accum += b->c->L1_POOL[d][y+y_offset][x+x_offset] * filt_C[z][d][y][x]; // multiply filter with input image from top left to right
 
-                        x_offset += STRIDE_C;
-                        accum += bias_filt_C[z]; // add bias
-                        if(accum > 0) // relu
-                        {
-                            b->c->L2[z][h][w] = 1/(1+exp(-accum)); //sigmoid
-                            accum = 0;
+                            x_offset += STRIDE_C;
+                            accum += bias_filt_C[z]; // add bias
+                            if(accum > 0) // relu
+                            {
+                                b->c->L2[z][h][w] = 1/(1+exp(-accum)); //sigmoid
+                                accum = 0;
+                            }
+                            else
+                            {
+                                b->c->L2[z][h][w] = 0;
+                                accum = 0;
+                            }
+                            #ifdef DEBUG
+                            printf("%f \n", b->c->L2[z][h][w]);
+                            #endif // DEBUG
                         }
-                        else
-                        {
-                            b->c->L2[z][h][w] = 0;
-                            accum = 0;
-                        }
-                        #ifdef DEBUG
-                        printf("%f \n", b->c->L2[z][h][w]);
-                        #endif // DEBUG
+                        x_offset=0;
+                        y_offset+=STRIDE_C;
                     }
-                    x_offset=0;
-                    y_offset+=STRIDE_C;
+                    y_offset=0;
                 }
-                y_offset=0;
             }
             b=max_pool(b,curr_layer); //max_pool each depth layer of b->c->L1
             break;
@@ -403,20 +410,23 @@ void init_weights(void) //init weights to a random value between 0-1
 void init_filters(void)
 {
     //first filter layer
-    for(int x=0; x<FILT_A_NUM; x++)
-        for(int y=0; y<FILT_A_SIZE; y++) //columns
-            for(int z=0; z<FILT_A_SIZE; z++) //rows
-                filt_A[x][y][z] = -1+2*((float)rand())/RAND_MAX;
+    for(int z=0; z<FILT_A_NUM; z++)
+        for(int d=0; d<FILT_A_DEPTH; d++)
+            for(int y=0; y<FILT_A_SIZE; y++) //rows
+                for(int x=0; x<FILT_A_SIZE; x++) //columns
+                    filt_A[z][d][y][x] = -1+2*((float)rand())/RAND_MAX;
     //second layer filter
-    for(int i=0; i<FILT_B_NUM; i++)
-        for(int j=0; j<FILT_B_SIZE; j++) //columns
-            for(int k=0; k<FILT_B_SIZE; k++) //rows
-                filt_B[i][j][k] = -1+2*((float)rand())/RAND_MAX;
+    for(int z=0; z<FILT_B_NUM; z++)
+        for(int d=0; d<FILT_B_DEPTH; d++)
+            for(int y=0; y<FILT_B_SIZE; y++) //rows
+                for(int x=0; x<FILT_B_SIZE; x++) //columns
+                    filt_B[z][d][y][x] = -1+2*((float)rand())/RAND_MAX;
     //third layer filter
-    for(int a=0; a<FILT_C_NUM; a++)
-        for(int b=0; b<FILT_C_SIZE; b++) //columns
-            for(int c=0; c<FILT_C_SIZE; c++) //rows
-                filt_C[a][b][c] = -1+2*((float)rand())/RAND_MAX;
+    for(int z=0; z<FILT_C_NUM; z++)
+        for(int d=0; d<FILT_C_DEPTH; d++)
+            for(int y=0; y<FILT_C_SIZE; y++) //rows
+                for(int x=0; x<FILT_C_SIZE; x++) //columns
+                    filt_C[z][d][y][x] = -1+2*((float)rand())/RAND_MAX;
 }
 
 
@@ -593,19 +603,19 @@ brain* bp(brain* b) // TODO test result vs true result
     //image input <- conv L0
     for(int i=0; i<FILT_A_NUM; i++)
     {
-        for(int x=(i*FEAT_MAP_SIZE_A); x<FEAT_MAP_SIZE_A+(i*FEAT_MAP_SIZE_A); x++)
+        for(int d=0; d<FILT_A_DEPTH; d++)
         {
             grad_weight_product = 0;
-            /*
-            for(int l=0; l<FILT_B_SIZE; l++)
-                for(int m=0; m<FILT_B_SIZE; m++)
-                    grad_weight_product += (conv_L1_grad[l][m] * filt_B[i][l][m]); //breaking logic here, filt_B is reference by filt_A num i
-                    */
-            for(int w=0; w<LAYER0_SIZE; w++) // each feature map has limited connectivity to first dense layer
-                grad_weight_product += (b->L0->gradient[w] * Wij[x][w]); // static float Wij[FLAT_SIZE][LAYER0_SIZE];
 
-            xy = flat_to_2D(L0_POOL_X, x, xy); // test this
-            local_grad = (b->c->L0_POOL[i][*xy][*(xy+1)]*(1-b->c->L0_POOL[i][*xy][*(xy+1)])); // sigmoid derivative
+            for(int x=0; x<FLAT_SIZE; x++)
+            {
+                for(int w=0; w<LAYER0_SIZE; w++)
+                    grad_weight_product += (b->L0->gradient[w] * Wij[x][w]); // static float Wij[FLAT_SIZE][LAYER0_SIZE];
+
+                xy = flat_to_2D(L0_POOL_X, x, xy); // test this
+                local_grad = (b->c->L0_POOL[i][*xy][*(xy+1)]*(1-b->c->L0_POOL[i][*xy][*(xy+1)])); // sigmoid derivative
+            }
+
 
             for(int y=0; y<FILT_A_SIZE; y++)
                 for(int x=0; x<FILT_A_SIZE; x++)
@@ -615,7 +625,7 @@ brain* bp(brain* b) // TODO test result vs true result
             for(int l=0; l<FILT_A_SIZE; l++)
                 for(int m=0; m<FILT_A_SIZE; m++)
                 {
-                    filt_A[i][l][m] += ETA * conv_L0_grad[l][m] * b->in->mat2D[l+y_offset][m+x_offset]; //NOTE: new filter kernel = (input feature map) * (gradients) * (learning rate)
+                    filt_A[i][d][l][m] += ETA * conv_L0_grad[l][m] * b->in->mat2D[l+y_offset][m+x_offset]; //NOTE: new filter kernel = (input feature map) * (gradients) * (learning rate)
                     //printf("%f \n", filt_A[i][l][m]);
                     //bias_filt_A[i] = conv_L0_grad[l][m] * ETA; //wrong
                 }
